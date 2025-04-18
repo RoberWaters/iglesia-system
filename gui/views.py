@@ -3,7 +3,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-
+import sys
+from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
@@ -21,10 +22,6 @@ class MainApplication:
             self.root.destroy()
             return
         
-        self.setup_ui()
-        
-    def setup_ui(self) -> None:
-        """Configura la interfaz de usuario principal"""
         self.create_main_menu()
         self.show_main_panel()
     
@@ -145,7 +142,6 @@ class MainApplication:
         
         ttk.Button(dialog, text="Guardar", command=save).grid(row=4, column=0, columnspan=2, pady=10)
     
-    # Métodos similares para sacramentos, eventos, donaciones e intenciones
     def show_sacramentos(self):
         """Muestra la gestión de sacramentos"""
         self.clear_frame()
@@ -357,17 +353,48 @@ class MainApplication:
         columns = ("ID", "Feligrés", "Monto", "Fecha", "Método de Pago")
         tree = ttk.Treeview(main_frame, columns=columns, show="headings")
         
-        for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=120, anchor=tk.W)
+        # Configurar encabezados y columnas con anchos específicos
+        tree.heading("ID", text="ID")
+        tree.column("ID", width=50, anchor=tk.CENTER)
         
-        tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        tree.heading("Feligrés", text="Feligrés")
+        tree.column("Feligrés", width=200, anchor=tk.W)
         
-        # Cargar datos
+        tree.heading("Monto", text="Monto")
+        tree.column("Monto", width=100, anchor=tk.E)
+        
+        tree.heading("Fecha", text="Fecha")
+        tree.column("Fecha", width=100, anchor=tk.CENTER)
+        
+        tree.heading("Método de Pago", text="Método de Pago")
+        tree.column("Método de Pago", width=150, anchor=tk.W)
+        
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(main_frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.pack(fill=tk.BOTH, expand=True)
+        
+        # Cargar datos con formato adecuado
         donaciones = self.db.get_donaciones()
         if donaciones:
             for donacion in donaciones:
-                tree.insert("", tk.END, values=donacion)
+                # Asegurar el orden correcto: ID, Feligrés, Monto, Fecha, Método
+                id_donacion, nombre_feligres, monto, fecha, metodo = donacion
+                
+                # Formatear monto como moneda
+                try:
+                    monto_formateado = f"${float(monto):,.2f}"
+                except (ValueError, TypeError):
+                    monto_formateado = monto
+                
+                # Formatear fecha si es necesario
+                if hasattr(fecha, 'strftime'):
+                    fecha_formateada = fecha.strftime("%d/%m/%Y")
+                else:
+                    fecha_formateada = fecha
+                
+                tree.insert("", tk.END, values=(id_donacion, nombre_feligres, monto_formateado, fecha_formateada, metodo))
     
     def show_add_donacion(self):
         """Muestra el formulario para agregar una donación"""
