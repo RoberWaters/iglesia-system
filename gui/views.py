@@ -65,7 +65,7 @@ class MainApplication:
                  font=('Helvetica', 12)).pack(pady=10)
     
     def show_fieles(self) -> None:
-        """Muestra la gestión de feligreses"""
+        """Muestra la gestión de feligreses con estructura adaptada a la BD"""
         self.clear_frame()
         
         main_frame = ttk.Frame(self.root)
@@ -85,9 +85,18 @@ class MainApplication:
         columns = ("ID", "Nombre", "Dirección", "Teléfono", "Email")
         tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
         
+        # Configuración explícita de columnas
+        column_config = {
+            "ID": {"width": 50, "anchor": tk.CENTER},
+            "Nombre": {"width": 150, "anchor": tk.W},
+            "Dirección": {"width": 200, "anchor": tk.W},
+            "Teléfono": {"width": 100, "anchor": tk.W},
+            "Email": {"width": 150, "anchor": tk.W}
+        }
+        
         for col in columns:
             tree.heading(col, text=col)
-            tree.column(col, width=120, anchor=tk.W)
+            tree.column(col, **column_config[col])
         
         # Scrollbar
         scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=tree.yview)
@@ -95,12 +104,29 @@ class MainApplication:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         tree.pack(fill=tk.BOTH, expand=True)
         
-        # Cargar datos
-        fieles = self.db.get_fieles()
-        if fieles:
+        # Cargar datos con manejo robusto
+        try:
+            fieles = self.db.get_fieles()
+            
+            if not fieles:
+                messagebox.showinfo("Información", "No hay feligreses registrados")
+                return
+                
             for fiel in fieles:
-                tree.insert("", tk.END, values=fiel)
-    
+                # Asegurar el orden: id_fiel, nombre, direccion, telefono, email
+                tree.insert("", tk.END, values=(
+                    fiel[0],  # id_fiel
+                    fiel[1],  # nombre
+                    fiel[2] if fiel[2] else "",  # direccion (manejo de NULL)
+                    fiel[3] if fiel[3] else "",  # telefono (manejo de NULL)
+                    fiel[4] if fiel[4] else ""   # email (manejo de NULL)
+                ))
+                
+        except Exception as e:
+            print("Error al cargar feligreses:", str(e))
+            messagebox.showerror("Error", 
+                f"No se pudieron cargar los feligreses.\nError: {str(e)}")
+        
     def show_add_fiel(self) -> None:
         """Muestra el formulario para agregar un feligrés"""
         dialog = tk.Toplevel(self.root)
@@ -143,37 +169,45 @@ class MainApplication:
         ttk.Button(dialog, text="Guardar", command=save).grid(row=4, column=0, columnspan=2, pady=10)
     
     def show_sacramentos(self):
-        """Muestra la gestión de sacramentos"""
+        """Muestra sacramentos y registros según estructura de la BD"""
         self.clear_frame()
         
         main_frame = ttk.Frame(self.root)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Notebook (pestañas)
         notebook = ttk.Notebook(main_frame)
         notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Pestaña de sacramentos
+        # Pestaña de Sacramentos
         sacramentos_tab = ttk.Frame(notebook)
         notebook.add(sacramentos_tab, text="Sacramentos")
         
         # Treeview para sacramentos
-        columns = ("ID", "Nombre", "Descripción")
-        tree = ttk.Treeview(sacramentos_tab, columns=columns, show="headings")
+        sac_columns = ("ID", "Nombre", "Descripción")
+        sac_tree = ttk.Treeview(sacramentos_tab, columns=sac_columns, show="headings")
         
-        for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=120, anchor=tk.W)
+        sac_tree.heading("ID", text="ID")
+        sac_tree.column("ID", width=50, anchor=tk.CENTER)
         
-        tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        sac_tree.heading("Nombre", text="Nombre")
+        sac_tree.column("Nombre", width=150, anchor=tk.W)
         
-        # Cargar datos
+        sac_tree.heading("Descripción", text="Descripción")
+        sac_tree.column("Descripción", width=250, anchor=tk.W)
+        
+        sac_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Cargar sacramentos
         sacramentos = self.db.get_sacramentos()
         if sacramentos:
             for sac in sacramentos:
-                tree.insert("", tk.END, values=sac)
+                sac_tree.insert("", tk.END, values=(
+                    sac[0],  # id_sacramento
+                    sac[1],  # nombre
+                    sac[2] if sac[2] else ""  # descripcion
+                ))
         
-        # Pestaña de registros sacramentales
+        # Pestaña de Registros
         registros_tab = ttk.Frame(notebook)
         notebook.add(registros_tab, text="Registros")
         
@@ -181,27 +215,43 @@ class MainApplication:
         btn_frame = ttk.Frame(registros_tab)
         btn_frame.pack(fill=tk.X, pady=5)
         
-        ttk.Button(btn_frame, text="Agregar Registro", 
-                  command=self.show_add_registro).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Regresar", 
-                  command=self.show_main_panel).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text="Agregar Registro", command=self.show_add_registro).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Regresar", command=self.show_main_panel).pack(side=tk.RIGHT, padx=5)
         
         # Treeview para registros
-        columns = ("ID", "Feligrés", "Sacramento", "Fecha", "Sacerdote")
-        registros_tree = ttk.Treeview(registros_tab, columns=columns, show="headings")
+        reg_columns = ("ID", "Feligrés", "Sacramento", "Fecha", "Sacerdote")
+        reg_tree = ttk.Treeview(registros_tab, columns=reg_columns, show="headings")
         
-        for col in columns:
-            registros_tree.heading(col, text=col)
-            registros_tree.column(col, width=120, anchor=tk.W)
+        reg_tree.heading("ID", text="ID")
+        reg_tree.column("ID", width=50, anchor=tk.CENTER)
         
-        registros_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        reg_tree.heading("Feligrés", text="Feligrés")
+        reg_tree.column("Feligrés", width=150, anchor=tk.W)
         
-        # Cargar datos
+        reg_tree.heading("Sacramento", text="Sacramento")
+        reg_tree.column("Sacramento", width=150, anchor=tk.W)
+        
+        reg_tree.heading("Fecha", text="Fecha")
+        reg_tree.column("Fecha", width=100, anchor=tk.CENTER)
+        
+        reg_tree.heading("Sacerdote", text="Sacerdote")
+        reg_tree.column("Sacerdote", width=150, anchor=tk.W)
+        
+        reg_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Cargar registros
         registros = self.db.get_registros_sacramentales()
         if registros:
             for reg in registros:
-                registros_tree.insert("", tk.END, values=reg)
-    
+                fecha = reg[3].strftime("%d/%m/%Y") if hasattr(reg[3], 'strftime') else reg[3]
+                reg_tree.insert("", tk.END, values=(
+                    reg[0],  # id_registro
+                    reg[1],  # nombre_feligres
+                    reg[2],  # nombre_sacramento
+                    reg[3],   # fecha formateada
+                    reg[4]   # sacerdote
+                ))
+
     def show_add_registro(self):
         """Muestra el formulario para agregar un registro sacramental"""
         dialog = tk.Toplevel(self.root)
@@ -256,7 +306,7 @@ class MainApplication:
         ttk.Button(dialog, text="Guardar", command=save).grid(row=4, column=0, columnspan=2, pady=10)
     
     def show_eventos(self):
-        """Muestra la gestión de eventos"""
+        """Muestra la gestión de eventos con datos correctamente alineados"""
         self.clear_frame()
         
         main_frame = ttk.Frame(self.root)
@@ -273,18 +323,42 @@ class MainApplication:
         columns = ("ID", "Título", "Descripción", "Fecha", "Lugar")
         tree = ttk.Treeview(main_frame, columns=columns, show="headings")
         
-        for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=120, anchor=tk.W)
+        # Configuración de columnas
+        tree.heading("ID", text="ID")
+        tree.column("ID", width=50, anchor=tk.CENTER)
+        
+        tree.heading("Título", text="Título")
+        tree.column("Título", width=150, anchor=tk.W)
+        
+        tree.heading("Descripción", text="Descripción")
+        tree.column("Descripción", width=200, anchor=tk.W)
+        
+        tree.heading("Fecha", text="Fecha")
+        tree.column("Fecha", width=120, anchor=tk.CENTER)
+        
+        tree.heading("Lugar", text="Lugar")
+        tree.column("Lugar", width=150, anchor=tk.W)
         
         tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Cargar datos
-        eventos = self.db.get_eventos()
-        if eventos:
-            for evento in eventos:
-                tree.insert("", tk.END, values=evento)
-    
+        # Cargar datos con manejo seguro
+        try:
+            eventos = self.db.get_eventos()
+            if eventos:
+                for evento in eventos:
+                    # Asegurar que tenemos todos los campos necesarios
+                    if len(evento) >= 5:
+                        tree.insert("", tk.END, values=(
+                            evento[0],  # id_evento
+                            evento[1],  # título
+                            evento[2] if evento[2] else "",  # descripción
+                            evento[3],  # fecha ya formateada
+                            evento[4]   # lugar
+                        ))
+        except Exception as e:
+            print(f"Error al cargar eventos: {e}")
+            messagebox.showerror("Error", "No se pudieron cargar los eventos")
+
     def show_add_evento(self):
         """Muestra el formulario para agregar un evento"""
         dialog = tk.Toplevel(self.root)
@@ -452,7 +526,7 @@ class MainApplication:
         ttk.Button(dialog, text="Guardar", command=save).grid(row=4, column=0, columnspan=2, pady=10)
     
     def show_intenciones(self):
-        """Muestra la gestión de intenciones de misa"""
+        """Muestra la gestión de intenciones con datos correctamente alineados"""
         self.clear_frame()
         
         main_frame = ttk.Frame(self.root)
@@ -469,17 +543,37 @@ class MainApplication:
         columns = ("ID", "Feligrés", "Descripción", "Fecha")
         tree = ttk.Treeview(main_frame, columns=columns, show="headings")
         
-        for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=120, anchor=tk.W)
+        # Configuración explícita de columnas
+        tree.heading("ID", text="ID")
+        tree.column("ID", width=50, anchor=tk.CENTER)
+        
+        tree.heading("Feligrés", text="Feligrés")
+        tree.column("Feligrés", width=150, anchor=tk.W)
+        
+        tree.heading("Descripción", text="Descripción")
+        tree.column("Descripción", width=250, anchor=tk.W)
+        
+        tree.heading("Fecha", text="Fecha")
+        tree.column("Fecha", width=100, anchor=tk.CENTER)
         
         tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # Cargar datos
-        intenciones = self.db.get_intenciones_misa()
-        if intenciones:
-            for intencion in intenciones:
-                tree.insert("", tk.END, values=intencion)
+        # Cargar datos con manejo seguro
+        try:
+            intenciones = self.db.get_intenciones_misa()
+            if intenciones:
+                for intencion in intenciones:
+                    # Asegurar que tenemos todos los campos necesarios
+                    if len(intencion) >= 4:
+                        tree.insert("", tk.END, values=(
+                            intencion[0],  # id_intencion
+                            intencion[1],  # nombre_feligres
+                            intencion[2],  # descripcion
+                            intencion[3]   # fecha ya formateada
+                        ))
+        except Exception as e:
+            print(f"Error al cargar intenciones: {e}")
+            messagebox.showerror("Error", "No se pudieron cargar las intenciones")
     
     def show_add_intencion(self):
         """Muestra el formulario para agregar una intención de misa"""

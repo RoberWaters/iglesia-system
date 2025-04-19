@@ -63,10 +63,25 @@ class Database:
         if self.conn:
             self.conn.close()
 
-    # Métodos CRUD para Fieles
     def get_fieles(self) -> List[Tuple]:
-        """Obtiene todos los fieles registrados"""
-        return self.fetch_all("SELECT * FROM Fieles ORDER BY nombre")
+        """Obtiene todos los fieles registrados según la estructura de la BD"""
+        try:
+            query = """
+            SELECT 
+                id_fiel, 
+                nombre, 
+                direccion, 
+                telefono, 
+                email 
+            FROM Fieles 
+            ORDER BY nombre
+            """
+            result = self.fetch_all(query)
+            print("DEBUG - Resultado de get_fieles:", result)  # Para diagnóstico
+            return result if result else []
+        except Exception as e:
+            print("Error crítico en get_fieles:", str(e))
+            return []
 
     def add_fiel(self, nombre: str, direccion: str = None, telefono: str = None, email: str = None) -> bool:
         """Agrega un nuevo feligrés"""
@@ -75,10 +90,21 @@ class Database:
             (nombre, direccion, telefono, email)
         )
 
-    # Métodos CRUD para Sacramentos
     def get_sacramentos(self) -> List[Tuple]:
-        """Obtiene todos los sacramentos"""
-        return self.fetch_all("SELECT * FROM Sacramentos ORDER BY nombre")
+        """Obtiene todos los sacramentos con columnas explícitas"""
+        try:
+            query = """
+            SELECT 
+                id_sacramento, 
+                nombre, 
+                descripcion 
+            FROM Sacramentos 
+            ORDER BY nombre
+            """
+            return self.fetch_all(query)
+        except Exception as e:
+            print(f"Error en get_sacramentos: {e}")
+            return []
 
     def add_sacramento(self, nombre: str, descripcion: str = None) -> bool:
         """Agrega un nuevo sacramento"""
@@ -87,16 +113,25 @@ class Database:
             (nombre, descripcion)
         )
 
-    # Métodos CRUD para Registros Sacramentales
     def get_registros_sacramentales(self) -> List[Tuple]:
-        """Obtiene todos los registros sacramentales"""
-        return self.fetch_all("""
-            SELECT r.id_registro, f.nombre, s.nombre, r.fecha, r.sacerdote 
-            FROM Registros_Sacramentales r
-            JOIN Fieles f ON r.id_fiel = f.id_fiel
-            JOIN Sacramentos s ON r.id_sacramento = s.id_sacramento
-            ORDER BY r.fecha DESC
-        """)
+        """Obtiene registros sacramentales adaptado al esquema real"""
+        try:
+            query = """
+            SELECT 
+                rs.id_registro,
+                f.nombre AS nombre_feligres,  
+                s.nombre AS nombre_sacramento,
+                rs.fecha,
+                rs.sacerdote
+            FROM Registros_Sacramentales rs
+            JOIN Fieles f ON rs.id_fiel = f.id_fiel
+            JOIN Sacramentos s ON rs.id_sacramento = s.id_sacramento
+            ORDER BY rs.fecha DESC
+            """
+            return self.fetch_all(query)
+        except Exception as e:
+            print(f"Error en get_registros_sacramentales: {e}")
+            return []
 
     def add_registro_sacramental(self, id_fiel: int, id_sacramento: int, fecha: str, sacerdote: str) -> bool:
         """Agrega un nuevo registro sacramental"""
@@ -105,10 +140,23 @@ class Database:
             (id_fiel, id_sacramento, fecha, sacerdote)
         )
 
-    # Métodos CRUD para Eventos
     def get_eventos(self) -> List[Tuple]:
-        """Obtiene todos los eventos"""
-        return self.fetch_all("SELECT * FROM Eventos ORDER BY fecha DESC")
+        """Obtiene todos los eventos con columnas explícitas"""
+        try:
+            query = """
+            SELECT 
+                id_evento,
+                titulo,
+                descripcion,
+                CONVERT(varchar, fecha, 120) AS fecha_formateada,
+                lugar
+            FROM Eventos 
+            ORDER BY fecha DESC
+            """
+            return self.fetch_all(query)
+        except Exception as e:
+            print(f"Error en get_eventos: {e}")
+            return []
 
     def add_evento(self, titulo: str, descripcion: str, fecha: str, lugar: str) -> bool:
         """Agrega un nuevo evento"""
@@ -134,15 +182,24 @@ class Database:
             (id_fiel, monto, fecha, metodo_pago)
         )
 
-    # Métodos CRUD para Intenciones
     def get_intenciones_misa(self) -> List[Tuple]:
-        """Obtiene todas las intenciones de misa"""
-        return self.fetch_all("""
-            SELECT i.id_intencion, f.nombre, i.descripcion, i.fecha
+        """Obtiene todas las intenciones de misa con formato correcto"""
+        try:
+            query = """
+            SELECT 
+                i.id_intencion, 
+                f.nombre AS nombre_feligres, 
+                i.descripcion, 
+                CONVERT(varchar, i.fecha, 103) AS fecha_formateada
             FROM Intenciones_Misa i
             JOIN Fieles f ON i.id_fiel = f.id_fiel
             ORDER BY i.fecha DESC
-        """)
+            """
+            return self.fetch_all(query)
+        except Exception as e:
+            print(f"Error en get_intenciones_misa: {e}")
+            return []
+        
 
     def add_intencion_misa(self, id_fiel: int, descripcion: str, fecha: str) -> bool:
         """Agrega una nueva intención de misa"""
