@@ -3,8 +3,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import sys
-from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
@@ -15,6 +13,19 @@ class MainApplication:
         self.root = root
         self.root.title("Sistema de Gestión Parroquial")
         self.root.geometry("1200x700")
+        self.root.configure(bg='#f0f0f0')
+        
+        # Estilo moderno
+        self.style = ttk.Style()
+        self.style.theme_use('clam')
+        
+        # Configurar estilos
+        self.style.configure('TFrame', background='#f0f0f0')
+        self.style.configure('TLabel', background='#f0f0f0', font=('Helvetica', 11))
+        self.style.configure('TButton', font=('Helvetica', 10), padding=6)
+        self.style.configure('Header.TLabel', font=('Helvetica', 16, 'bold'))
+        self.style.configure('Subtitle.TLabel', font=('Helvetica', 12))
+        self.style.configure('Menu.TButton', width=20, padding=8)
         
         self.db = Database()
         if not self.db.connect():
@@ -27,15 +38,15 @@ class MainApplication:
     
     def create_main_menu(self) -> None:
         """Crea el menú principal de la aplicación"""
-        self.menu_bar = tk.Menu(self.root)
+        self.menu_bar = tk.Menu(self.root, bg='#f0f0f0', fg='black')
         
         # Menú Archivo
-        file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        file_menu = tk.Menu(self.menu_bar, tearoff=0, bg='#f0f0f0', fg='black')
         file_menu.add_command(label="Salir", command=self.root.quit)
         self.menu_bar.add_cascade(label="Archivo", menu=file_menu)
         
         # Menú Gestión
-        management_menu = tk.Menu(self.menu_bar, tearoff=0)
+        management_menu = tk.Menu(self.menu_bar, tearoff=0, bg='#f0f0f0', fg='black')
         management_menu.add_command(label="Feligreses", command=self.show_fieles)
         management_menu.add_command(label="Sacramentos", command=self.show_sacramentos)
         management_menu.add_command(label="Eventos", command=self.show_eventos)
@@ -52,17 +63,41 @@ class MainApplication:
                 widget.destroy()
     
     def show_main_panel(self) -> None:
-        """Muestra el panel principal"""
+        """Muestra el panel principal con los botones de gestión"""
         self.clear_frame()
         
-        frame = ttk.Frame(self.root)
-        frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        main_frame = ttk.Frame(self.root)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
         
-        ttk.Label(frame, text="Sistema de Gestión Parroquial", 
-                 font=('Helvetica', 16)).pack(pady=20)
+        # Encabezado
+        header_frame = ttk.Frame(main_frame)
+        header_frame.pack(pady=(0, 20))
         
-        ttk.Label(frame, text="Seleccione una opción del menú para comenzar", 
-                 font=('Helvetica', 12)).pack(pady=10)
+        ttk.Label(header_frame, text="Sistema de Gestión Parroquial", 
+                 style='Header.TLabel').pack()
+        
+        ttk.Label(header_frame, text="Seleccione una opción del menú para comenzar", 
+                 style='Subtitle.TLabel').pack(pady=(10, 30))
+        
+        # Botones de gestión
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.pack()
+        
+        # Configurar grid para los botones
+        buttons_frame.columnconfigure(0, weight=1)
+        buttons_frame.columnconfigure(1, weight=1)
+        buttons_frame.columnconfigure(2, weight=1)
+        
+        ttk.Button(buttons_frame, text="Feligreses", style='Menu.TButton', 
+                  command=self.show_fieles).grid(row=0, column=0, padx=10, pady=10)
+        ttk.Button(buttons_frame, text="Sacramentos", style='Menu.TButton', 
+                  command=self.show_sacramentos).grid(row=0, column=1, padx=10, pady=10)
+        ttk.Button(buttons_frame, text="Eventos", style='Menu.TButton', 
+                  command=self.show_eventos).grid(row=0, column=2, padx=10, pady=10)
+        ttk.Button(buttons_frame, text="Donaciones", style='Menu.TButton', 
+                  command=self.show_donaciones).grid(row=1, column=0, padx=10, pady=10)
+        ttk.Button(buttons_frame, text="Intenciones", style='Menu.TButton', 
+                  command=self.show_intenciones).grid(row=1, column=1, padx=10, pady=10)
     
     def show_fieles(self) -> None:
         """Muestra la gestión de feligreses con estructura adaptada a la BD"""
@@ -132,6 +167,7 @@ class MainApplication:
         dialog = tk.Toplevel(self.root)
         dialog.title("Agregar Feligrés")
         dialog.geometry("400x300")
+        dialog.configure(bg='#f0f0f0')
         
         ttk.Label(dialog, text="Nombre:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.E)
         nombre_entry = ttk.Entry(dialog)
@@ -257,6 +293,7 @@ class MainApplication:
         dialog = tk.Toplevel(self.root)
         dialog.title("Agregar Registro Sacramental")
         dialog.geometry("500x400")
+        dialog.configure(bg='#f0f0f0')
         
         # Obtener datos necesarios
         fieles = self.db.get_fieles()
@@ -364,6 +401,7 @@ class MainApplication:
         dialog = tk.Toplevel(self.root)
         dialog.title("Agregar Evento")
         dialog.geometry("500x400")
+        dialog.configure(bg='#f0f0f0')
         
         ttk.Label(dialog, text="Título:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.E)
         titulo_entry = ttk.Entry(dialog)
@@ -475,6 +513,7 @@ class MainApplication:
         dialog = tk.Toplevel(self.root)
         dialog.title("Agregar Donación")
         dialog.geometry("400x300")
+        dialog.configure(bg='#f0f0f0')
         
         # Obtener fieles
         fieles = self.db.get_fieles()
@@ -580,6 +619,7 @@ class MainApplication:
         dialog = tk.Toplevel(self.root)
         dialog.title("Agregar Intención de Misa")
         dialog.geometry("500x400")
+        dialog.configure(bg='#f0f0f0')
         
         # Obtener fieles
         fieles = self.db.get_fieles()
